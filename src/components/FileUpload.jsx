@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
-import { Upload, FileText, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Upload, FileText, AlertCircle, X } from 'lucide-react';
 
-const FileUpload = ({ onFileUpload }) => {
+const FileUpload = ({ onFileUpload, error: externalError, onClearError }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [sequence, setSequence] = useState('');
   const [error, setError] = useState('');
+  
+  // Sync external errors with internal state
+  useEffect(() => {
+    if (externalError) {
+      setError(externalError);
+    }
+  }, [externalError]);
 
   const validateFASTA = (text) => {
     // Basic FASTA validation
@@ -19,15 +26,25 @@ const FileUpload = ({ onFileUpload }) => {
   const handleFileSelect = (file) => {
     if (!file) return;
     
+    // Check file size (limit to 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size exceeds 10MB limit. Please upload a smaller file.');
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target.result;
       if (validateFASTA(content)) {
         setError('');
+        if (onClearError) onClearError();
         onFileUpload(content);
       } else {
         setError('Invalid FASTA format. Please ensure your file starts with ">" and contains only valid DNA bases (A, T, C, G).');
       }
+    };
+    reader.onerror = () => {
+      setError('Failed to read file. Please try again with a different file.');
     };
     reader.readAsText(file);
   };
@@ -42,6 +59,7 @@ const FileUpload = ({ onFileUpload }) => {
   const handleTextSubmit = () => {
     if (validateFASTA(sequence)) {
       setError('');
+      if (onClearError) onClearError();
       onFileUpload(sequence);
     } else {
       setError('Invalid FASTA format. Please ensure your sequence starts with ">" and contains only valid DNA bases (A, T, C, G).');
@@ -130,9 +148,18 @@ ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG`;
         </div>
 
         {error && (
-          <div className="mt-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-            <p className="text-red-200 text-sm">{error}</p>
+          <div className="mt-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg flex items-start">
+            <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 mr-3 flex-shrink-0" />
+            <p className="text-red-200 text-sm flex-grow">{error}</p>
+            <button 
+              onClick={() => {
+                setError('');
+                if (onClearError) onClearError();
+              }}
+              className="text-red-300 hover:text-red-100 transition-colors ml-2"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         )}
 
