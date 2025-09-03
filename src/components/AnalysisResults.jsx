@@ -1,8 +1,8 @@
 import React from 'react';
-import { Dna, Sparkles, CreditCard, RotateCcw, Lock, Unlock } from 'lucide-react';
+import { Dna, Sparkles, CreditCard, RotateCcw, Lock, Unlock, Info, Download } from 'lucide-react';
 
-const AnalysisResults = ({ data, paidForDetailed, onPurchaseDetailed, onStartOver }) => {
-  const { basicResults, detailedResults, snps } = data;
+const AnalysisResults = ({ data, paidForDetailed, onPurchaseDetailed, onStartOver, sequenceInfo }) => {
+  const { basicResults, detailedResults, snps, patternMatches, sequenceLength, processingTime } = data;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -17,7 +17,47 @@ const AnalysisResults = ({ data, paidForDetailed, onPurchaseDetailed, onStartOve
         <p className="text-white/80">
           We've identified {snps.length} SNPs and analyzed {basicResults.length} genetic traits
         </p>
+        <div className="flex justify-center mt-4">
+          <div className="inline-flex items-center text-sm text-white/60 bg-white/5 rounded-full px-4 py-1">
+            <Info className="w-4 h-4 mr-2 text-cyan-400" />
+            Analysis completed in {(processingTime / 1000).toFixed(1)}s
+          </div>
+        </div>
       </div>
+      
+      {/* Sequence Info */}
+      {sequenceInfo && (
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center">
+            <Info className="w-5 h-5 mr-2 text-blue-400" />
+            Sequence Information
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <h3 className="font-semibold text-white text-sm mb-1">Sequence Name</h3>
+              <p className="text-white/70 text-sm font-mono truncate">{sequenceInfo.header || 'Unnamed Sequence'}</p>
+            </div>
+            
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <h3 className="font-semibold text-white text-sm mb-1">Length</h3>
+              <p className="text-white/70 text-sm">{sequenceInfo.length.toLocaleString()} base pairs</p>
+            </div>
+            
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <h3 className="font-semibold text-white text-sm mb-1">GC Content</h3>
+              <p className="text-white/70 text-sm">{sequenceInfo.gcContent}%</p>
+            </div>
+          </div>
+          
+          <div className="mt-4 flex justify-end">
+            <button className="flex items-center text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
+              <Download className="w-4 h-4 mr-1" />
+              Download Analysis Report
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Basic Results (Free) */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
@@ -66,6 +106,9 @@ const AnalysisResults = ({ data, paidForDetailed, onPurchaseDetailed, onStartOve
               <div className="text-cyan-400 font-mono text-sm font-semibold">{snp.id}</div>
               <div className="text-white/60 text-xs mt-1">Position: {snp.position}</div>
               <div className="text-white/60 text-xs">Allele: {snp.allele}</div>
+              {snp.trait && (
+                <div className="text-white/60 text-xs mt-1">Associated with: {snp.trait}</div>
+              )}
             </div>
           ))}
         </div>
@@ -76,6 +119,41 @@ const AnalysisResults = ({ data, paidForDetailed, onPurchaseDetailed, onStartOve
           </p>
         )}
       </div>
+      
+      {/* Pattern Matching */}
+      {patternMatches && patternMatches.length > 0 && (
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white flex items-center">
+              <Sparkles className="w-5 h-5 mr-2 text-yellow-400" />
+              Pattern Matching
+            </h2>
+            <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium">
+              Basic Feature
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {patternMatches.map((match, index) => (
+              <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-semibold text-white text-sm">Pattern: <span className="font-mono">{match.pattern}</span></h3>
+                  <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs font-medium">
+                    {match.positions.length} matches
+                  </span>
+                </div>
+                <p className="text-white/70 text-sm mb-2">
+                  Found at positions: {match.positions.slice(0, 3).join(', ')}
+                  {match.positions.length > 3 && ` and ${match.positions.length - 3} more`}
+                </p>
+                {match.significance && (
+                  <p className="text-white/50 text-xs">{match.significance}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Detailed Results (Paid) */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
